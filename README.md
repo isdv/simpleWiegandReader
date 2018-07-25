@@ -20,6 +20,7 @@ Compile:
     
     insmod wiegand_reader.ko
     
+    dmesg
 
 Test:
 
