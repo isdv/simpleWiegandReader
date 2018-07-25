@@ -115,16 +115,7 @@ void wiegand_buf_clean(wiegand_buf_t *wb){
     wb->raw = 0;
 }
 
-unsigned char calc_even_parity(uint16_t x)
- {
-    x ^= x >> 8;
-    x ^= x >> 4;
-    x ^= x >> 2;
-    x ^= x >> 1;
-    return (~x) & 1;
- }
-
-unsigned char calc_odd_parity(uint16_t x)
+uint8_t calc_parity(uint16_t x)
 {
     x ^= x >> 8;
     x ^= x >> 4;
@@ -133,19 +124,19 @@ unsigned char calc_odd_parity(uint16_t x)
     return x & 1;
 }
 
-bool check_parity_w26(unsigned long nn){
-    uint16_t firstBLock, lastBLock;
-    bool firstParity, lastParity ,b1,b2;
+uint8_t check_parity_w26(unsigned long nn){
+    uint8_t  parity_calc, parity;
 
-    firstParity = nn & 0x1;
-    firstBLock = (nn>>1) & 0xfff;
-    lastParity = nn & 0x2000000;
-    lastBLock = (nn >>13);
-    lastBLock &= 0xfff;
-
-    b1 = calc_even_parity(firstBLock);
-    b2 = calc_odd_parity(lastBLock);
-    return ((b1 == firstParity) && (b2 == lastParity));
+    parity = nn & 0x1;
+    parity_calc = calc_parity((nn>>1) & 0xfff);   
+    if (parity == (!parity_calc)){
+        parity = (nn>>25) & 0x1;        
+        parity_calc = calc_parity((nn>>13) & 0xfff);   
+        if (parity == parity_calc) {
+            return 1;        
+        }
+    }
+    return 0;      
 }
 
 
@@ -153,7 +144,7 @@ static void w_timer_callback(unsigned long data)
 {
     wiegand_buf_t *wb = (wiegand_buf_t *) data;
 
-    bool correct;
+    uint8_t correct;
     int rc;
 
     if (wb->bitcount==26){
@@ -263,6 +254,7 @@ int init_module(void)
     lastCard.num=0;
 
     printk("wiegand_reader: Init completed.\n");
+    
     return 0;
 }
 
